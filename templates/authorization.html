@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css_style %}
+<link rel="stylesheet" href=" {% static 'background.css' %}">
+<link rel="stylesheet" href=" {% static 'button.css' %}">
+<link rel="stylesheet" href=" {% static 'auth.css' %}">
+<link rel="stylesheet" href=" {% static 'error.css' %}">
+<link rel="stylesheet" href=" {% static 'input.css' %}">
+{% endblock %}
+
+{% block tabMenu %}
+<div class="tab-register">
+    <!--        <div class="tabButton" onclick="window.location.href='/fill_db'">Заполнить БД</div>-->
+    <div class="tabButton {% if form_act == 'login' %}active{% endif %}" onclick="openTab('login')">Вход</div>
+    <div class="tabButton {% if form_act == 'register' %}active{% endif %}" onclick="openTab('register')">Регистрация
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Форма входа/регистрации -->
+<form id="auth-form" class="tab-content active" method="POST">
+    {% csrf_token %}
+    <input type="hidden" id="form_act" name="form_act" value="{{ form_act|default:'login' }}">
+
+    <h3 id="title-form">Вход</h3>
+    <label>
+        <input type="text" name="username" maxlength="30" id="id_username" placeholder="Логин" required>
+        <input type="password" name="password1" minlength="1" id="id_password1" placeholder="Пароль" required>
+
+        <span id="register-form" class="{% if form_act == 'register' %}visible{% else %}hidden{% endif %}">
+            <input type="password" name="password2" minlength="1" id="password2"
+                   placeholder="Повторите пароль">
+        </span>
+    </label>
+    <div class="button-container">
+        <button class="cButton" type="submit" id="submit-button">Войти</button>
+    </div>
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if message %}
+    <p class="message">{{ message }}</p>
+    {% endif %}
+</form>
+
+
+<script>
+    function openTab(tabName) {
+        // Управление полями формы
+        const registerFields = document.getElementById('register-form');
+        const repeatPasswordField = document.getElementById("password2");
+        const formTitle = document.getElementById('title-form');
+        const submitButton = document.getElementById('submit-button');
+        const formAct = document.getElementById('form_act');
+
+        // Управление отображением вкладок
+        const tabs = document.querySelectorAll('.tabButton');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`[onclick="openTab('${tabName}')"]`).classList.add('active');
+
+        if (tabName === 'login') {
+            registerFields.style.display = 'none';
+            formTitle.textContent = 'Вход';
+            submitButton.textContent = 'Войти';
+            document.getElementById("password2").value = "";
+            // Удаляем атрибут required
+            repeatPasswordField.removeAttribute('required');
+            formAct.value = 'login';
+        } else {
+            registerFields.style.display = 'block';
+            // Добавляем атрибут required
+            repeatPasswordField.setAttribute('required', '');
+            formTitle.textContent = 'Регистрация';
+            submitButton.textContent = 'Зарегистрироваться';
+            formAct.value =  'register';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        openTab(document.getElementById('form_act').value);
+    });
+</script>
+{% endblock %}

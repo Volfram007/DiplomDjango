@@ -1,0 +1,44 @@
+** Клонируем проект **
+   Кнопка создания проекта "from Version Control"
+   Вкладка Repository URL > URL > https://github.com/***.git
+   В терминале:
+   python -m venv venv
+   .\venv\Scripts\activate
+   python.exe -m pip install --upgrade pip
+
+   Вкладка Project Structure (Ctrl+Alt+Shift+S)
+   Вкладка Project
+   SDK > Add Python SDK
+   > Existing environment > кнопка "..."
+   (Подтверждаем путь к папке с \venv\Scripts\python.exe)
+***********************
+
+** ЗАВИСИМОСТИ **
+    pip install django huggingface_hub transformers Pillow torch matplotlib timm
+    pip freeze > requirements.txt
+
+    Удалите все пакеты, используя полученный список:
+    pip uninstall -r requirements.txt -y
+***********************
+
+** Django cmd **
+django-admin startproject Django
+Корневую папку Django нужно удалить из проекта (иначе конфликт путей)
+cmd для запуска сервера из каталога проекта:
+    python .\manage.py runserver
+cmd для создания приложения:
+    python .\manage.py startapp Forum
+***********************
+
+** Конфигурация запуска **
+	Python
+	script == manage.py
+	"Script parameters" == runserver
+	"Working directory" == $ProjectFileDir$
+***********************
+
+** ИНИЦИАЛИЗАЦИЯ БД **
++ Добавляем свой проект, заполняем "models" структурой таблицы
+python .\manage.py makemigrations
+python .\manage.py migrate
+* python .\manage.py createsuperuser

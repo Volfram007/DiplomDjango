@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css_style %}
+<link rel="stylesheet" href="{% static 'background.css' %}">
+<link rel="stylesheet" href="{% static 'button.css' %}">
+<link rel="stylesheet" href="{% static 'text.css' %}">
+{% endblock %}
+
+{% block tabMenu %}
+{% endblock %}
+
+
+{% block content %}
+<div style="text-align: center;">
+    {% if request.user.is_authenticated %}
+    <form id="uploadFile" method="POST" enctype="multipart/form-data" action="{% url 'upload_file' %}">
+        {% csrf_token %}
+        <h2>Загрузите фотографию в коллекцию альбома</h2>
+        <input type="file" class="tabLink" style="background-color: rgb(216 195 14); box-shadow: None;"
+               accept="image/png, image/jpeg" name="uploaded_files" multiple required/>
+        <button type="submit" class="tabLink" style="background-color: rgb(216 195 14); box-shadow: None;">
+            Загрузить
+        </button>
+    </form>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a style="color: #ec531e; text-decoration: none;" href="?page=1">[Первая] </a>
+        <a style="color: #ec531e; text-decoration: none; font-size: 22px;"
+           href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+        {% endif %}
+
+        <span class="current" style="color: #6cb777;">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a style="color: #ec531e; text-decoration: none; font-size: 22px;" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+        <a style="color: #ec531e; text-decoration: none;" href="?page={{ page_obj.paginator.num_pages }}">
+            [Последняя]</a>
+        {% endif %}
+    </div>
+
+    <!-- Фото лист -->
+    <div class="foto-container">
+        {% for date, fotos in page_obj %}
+        <div style="box-shadow: inset 0 0 30px rgba(237,83,30,0.3); border-radius: 22px;">
+            <h2>{{ date }}</h2>
+            <div class="date-photos">
+                {% for foto in fotos %}
+                {% if forloop.counter0|divisibleby:6 %}
+            </div>
+            <div class="date-photos">
+                {% endif %}
+                <div class="userFoto" style="display: inline-block; margin: 5px;">
+                    <a href="{{ foto.image.url }}">
+                        <img src="{{ foto.image.url }}"
+                             onerror="this.src='https://otvet.imgsmail.ru/download/8827816_18d2440457725e7740e47c172c0a6de8.jpg'"
+                             alt="Фото">
+                    </a>
+                    <!-- Удаление фото -->
+                    <form action="{% url 'delete_image' foto.id %}" method="post">
+                        {% csrf_token %}
+                        <button class=ButtonDelete type="submit">Удалить</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% empty %}
+        <div>
+            <div class="photoNotFound">
+                <img src="https://rdstroy.ru/upload/images/335515/big/photo2.jpg"
+                     alt="Фото не найдено">
+            </div>
+            <h2>Нет загруженных фотографий</h2>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a style="color: #ec531e; text-decoration: none;" href="?page=1">[Первая] </a>
+        <a style="color: #ec531e; text-decoration: none; font-size: 22px;"
+           href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+        {% endif %}
+
+        <span class="current"
+              style="color: #6cb777;">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a style="color: #ec531e; text-decoration: none; font-size: 22px;" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+        <a style="color: #ec531e; text-decoration: none;" href="?page={{ page_obj.paginator.num_pages }}">
+            [Последняя]</a>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <h1 class="shadow-Anonymous">{{ AnonymousUser }}</h1>
+        <div class="button-container">
+            <div class="cButton" style="width: 100px;" onclick="window.location.href='/'">Вход</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
