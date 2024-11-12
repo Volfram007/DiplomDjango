@@ -12,19 +12,22 @@ from InitText import *
 
 
 def index(request):
+    """
+    Отображает главную страницу приложения.
+    """
     context = {
-        'TitlePage': IndexTitle,  # Заголовок страницы
-        'TextPage': IndexText,  # Текст страницы
-        'btnHomeVisible': False,  # Видимость кнопки
-        'btnAuthenticatedVisible': True,
+        "TitlePage": IndexTitle,  # Заголовок страницы
+        "TextPage": IndexText,  # Текст страницы
+        "btnHomeVisible": False,  # Видимость кнопки
+        "btnAuthenticatedVisible": True,
     }
 
     if request.user.is_authenticated:
         fotos_sort_date = {}
-        fotos = ImageModel.objects.filter(user=request.user).order_by('-date')
+        fotos = ImageModel.objects.filter(user=request.user).order_by("-date")
         # Группировка фотографий по дате
         for foto in fotos:
-            date_str = foto.date.strftime('%d.%m.%Y')
+            date_str = foto.date.strftime("%d.%m.%Y")
             # Если строки с этой датой еще нет в словаре, создаем новый ключ с пустым списком
             if date_str not in fotos_sort_date:
                 fotos_sort_date[date_str] = []
@@ -35,87 +38,96 @@ def index(request):
         # Создание объекта пагинации
         paginator = Paginator(fotos_list, 3)
         # Получение номера страницы
-        page_number = request.GET.get('page')
+        page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
-        context['page_obj'] = page_obj
+        context["page_obj"] = page_obj
     else:
-        context['AnonymousUser'] = AnonymousUser
-    return render(request, 'index.html', context)
+        context["AnonymousUser"] = AnonymousUser
+    return render(request, "index.html", context)
 
 
 @login_required
 def user_logout(request):
-    # Очистка всех данных сессии
+    """
+    Выполняет выход пользователя из системы.
+    """
     logout(request)
-    return redirect('authorization')
+    return redirect("authorization")
 
 
 def authorization(request):
-    """ Авторизация и регистрация """
+    """
+    Обрабатывает запросы для страницы авторизации и регистрации.
+    """
     # Проверка на авторизацию
     if request.user.is_authenticated:
         # Переход на домашнюю страницу
-        return redirect('index')
+        return redirect("index")
 
     context = {
-        'TitlePage': 'Авторизация',  # Заголовок страницы
-        'btnHomeVisible': True,
-        'btnAuthenticatedVisible': False,
+        "TitlePage": "Авторизация",  # Заголовок страницы
+        "btnHomeVisible": True,
+        "btnAuthenticatedVisible": False,
     }
 
-    if request.method == 'POST':
+    if request.method == "POST":
         # Получение типа активной формы (вход или регистрация)
-        form_type = request.POST.get('form_act')
+        form_type = request.POST.get("form_act")
         # Получаем логин и пароль
-        username = request.POST.get('username')
-        password1 = request.POST.get('password1')
+        username = request.POST.get("username")
+        password1 = request.POST.get("password1")
 
         # Обработка действия формы, вход
-        if form_type == 'login':
+        if form_type == "login":
             # Аутентификация пользователя по имени и паролю
             user = authenticate(request, username=username, password=password1)
             # Проверка, успешна ли аутентификация
             if user is not None:
                 # Вход пользователя в систему
                 login(request, user)
-                return redirect('index')
+                return redirect("index")
             else:
                 # Сообщение об ошибке при неверном логине или пароле
-                context['error'] = Error_LoginOrPassword
+                context["error"] = Error_LoginOrPassword
 
         # Обработка действия формы, регистрация
-        elif form_type == 'register':
+        elif form_type == "register":
             # Получаем подтверждение пароля
-            password2 = request.POST.get('password2')
+            password2 = request.POST.get("password2")
             # Импорт библиотеки для дополнительных проверок
             import re
 
             # Проверка на заполнение всех полей
             if not (username or password1 or password2):
-                context['error'] = Error_AllFieldsRequired
+                context["error"] = Error_AllFieldsRequired
             # Проверка, совпадают ли введенные пароли
             elif password1 != password2:
-                context['error'] = Error_PasswordsNotMatch
+                context["error"] = Error_PasswordsNotMatch
             # Проверка на совпадение логина
             elif User.objects.filter(username=username).exists():
-                context['error'] = Error_UserExists
+                context["error"] = Error_UserExists
             # Проверка длины пароля
             elif len(password1 or password2) <= Min_Password_Length:
-                context['error'] = Error_Password_Length
+                context["error"] = Error_Password_Length
             else:
                 # Создание нового пользователя с хешированным паролем
                 user = User(username=username, password=make_password(password1))
                 user.save()
                 # Автоматический вход
                 login(request, user)
-                return redirect('index')
+                return redirect("index")
             # Если произошла ошибка, активируем форму регистрации
-            context['form_act'] = 'register'
-    return render(request, 'authorization.html', context)
+            context["form_act"] = "register"
+    return render(request, "authorization.html", context)
 
 
 def get_random_date():
-    """Генерируем случайное смещение от текущей даты"""
+    """
+    Генерирует случайную дату, смещенную от текущей даты на заданный диапазон.
+
+    Возвращает:
+    datetime: Объект даты и времени, смещенный на случайное количество дней в прошлое.
+    """
     import random
     from datetime import timedelta
     from django.utils import timezone
@@ -127,27 +139,38 @@ def get_random_date():
 
 @login_required
 def upload_file(request):
+    """
+    Обрабатывает загрузку файлов изображений от авторизованных пользователей.
+    """
+
     # Проверка авторизации
     if not request.user.is_authenticated:
-        return redirect('authorization')
+        return redirect("authorization")
 
     # Получаем файл
-    if request.method == 'POST':
+    if request.method == "POST":
         # Получаем файлы и сохраняем
-        for uploaded_file in request.FILES.getlist('uploaded_files'):
+        for uploaded_file in request.FILES.getlist("uploaded_files"):
             # Генерируем случайную дату
             file_date = get_random_date()
             foto = ImageModel(user=request.user, image=uploaded_file, date=file_date)
             foto.save()
-    return redirect('index')
+    return redirect("index")
 
 
 @login_required
 def delete_image(request, image_id):
+    """
+    Удаляет изображение, связанное с текущим пользователем, и файл изображения с диска.
+
+    Параметры:
+    request (HttpRequest): HTTP-запрос от пользователя.
+    image_id (int): Идентификатор изображения, которое нужно удалить.
+    """
     # Если объект не найден, возвращается ошибка 404.
     image = get_object_or_404(ImageModel, id=image_id, user=request.user)
     # Получение пути к файлу изображения
-    image_path = Path(__file__).resolve().parent.parent / 'media' / str(image.image)
+    image_path = Path(__file__).resolve().parent.parent / "media" / str(image.image)
     # Удаление объекта из базы данных
     image.delete()
     # Проверка существования файла на диске и его удаление
@@ -157,4 +180,4 @@ def delete_image(request, image_id):
         except Exception as e:
             print(f"Ошибка при удалении файла: {e}")
     # Перенаправление пользователя на главную страницу после удаления изображения
-    return redirect('index')
+    return redirect("index")
