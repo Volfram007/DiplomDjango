@@ -70,6 +70,7 @@ def authorization(request):
         username = request.POST.get('username')
         password1 = request.POST.get('password1')
 
+        # Обработка действия формы, вход
         if form_type == 'login':
             # Аутентификация пользователя по имени и паролю
             user = authenticate(request, username=username, password=password1)
@@ -82,7 +83,7 @@ def authorization(request):
                 # Сообщение об ошибке при неверном логине или пароле
                 context['error'] = Error_LoginOrPassword
 
-        # Обработка формы регистрации
+        # Обработка действия формы, регистрация
         elif form_type == 'register':
             # Получаем подтверждение пароля
             password2 = request.POST.get('password2')
@@ -90,7 +91,7 @@ def authorization(request):
             import re
 
             # Проверка на заполнение всех полей
-            if not username or not password1 or not password2:
+            if not (username or password1 or password2):
                 context['error'] = Error_AllFieldsRequired
             # Проверка, совпадают ли введенные пароли
             elif password1 != password2:
