@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -20,7 +22,6 @@ def index(request):
     if request.user.is_authenticated:
         fotos_sort_date = {}
         fotos = ImageModel.objects.filter(user=request.user).order_by('-date')
-        print(fotos)
         # Группировка фотографий по дате
         for foto in fotos:
             date_str = foto.date.strftime('%d.%m.%Y')
@@ -142,7 +143,17 @@ def upload_file(request):
 
 @login_required
 def delete_image(request, image_id):
-    # Если объект не найден, возвращается ошибка 404
+    # Если объект не найден, возвращается ошибка 404.
     image = get_object_or_404(ImageModel, id=image_id, user=request.user)
+    # Получение пути к файлу изображения
+    image_path = Path(__file__).resolve().parent.parent / 'media' / str(image.image)
+    # Удаление объекта из базы данных
     image.delete()
+    # Проверка существования файла на диске и его удаление
+    if os.path.exists(image_path):
+        try:
+            os.remove(image_path)
+        except Exception as e:
+            print(f"Ошибка при удалении файла: {e}")
+    # Перенаправление пользователя на главную страницу после удаления изображения
     return redirect('index')
