@@ -4,16 +4,16 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404, render, redirect
-from InitText import *
 from Forum.models import *
+
+from InitText import *
 
 
 def index(request):
-    """ Главная страница """
     context = {
-        'TitlePage': IndexTitle,
-        'TextPage': IndexText,
-        'btnHomeVisible': False,
+        'TitlePage': IndexTitle,  # Заголовок страницы
+        'TextPage': IndexText,  # Текст страницы
+        'btnHomeVisible': False,  # Видимость кнопки
         'btnAuthenticatedVisible': True,
     }
 
@@ -24,14 +24,16 @@ def index(request):
         # Группировка фотографий по дате
         for foto in fotos:
             date_str = foto.date.strftime('%d.%m.%Y')
+            # Если строки с этой датой еще нет в словаре, создаем новый ключ с пустым списком
             if date_str not in fotos_sort_date:
                 fotos_sort_date[date_str] = []
             fotos_sort_date[date_str].append(foto)
 
         # Словарь в список (дата, список фото)
         fotos_list = list(fotos_sort_date.items())
-        print(fotos_list)
+        # Создание объекта пагинации
         paginator = Paginator(fotos_list, 3)
+        # Получение номера страницы
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         context['page_obj'] = page_obj
@@ -55,37 +57,41 @@ def authorization(request):
         return redirect('index')
 
     context = {
-        'TitlePage': 'Авторизация',
+        'TitlePage': 'Авторизация',  # Заголовок страницы
         'btnHomeVisible': True,
         'btnAuthenticatedVisible': False,
     }
 
     if request.method == 'POST':
-        # Считываем тип активной формы (Вход/Регистрация)
+        # Получение типа активной формы (вход или регистрация)
         form_type = request.POST.get('form_act')
         # Получаем логин и пароль
         username = request.POST.get('username')
         password1 = request.POST.get('password1')
 
         if form_type == 'login':
-            # Проверяет существование пользователя с проверкой пароля
+            # Аутентификация пользователя по имени и паролю
             user = authenticate(request, username=username, password=password1)
-            # Если пользователь существует, то авторизуем его
+            # Проверка, успешна ли аутентификация
             if user is not None:
+                # Вход пользователя в систему
                 login(request, user)
                 return redirect('index')
             else:
+                # Сообщение об ошибке при неверном логине или пароле
                 context['error'] = Error_LoginOrPassword
 
+        # Обработка формы регистрации
         elif form_type == 'register':
             # Получаем подтверждение пароля
             password2 = request.POST.get('password2')
+            # Импорт библиотеки для дополнительных проверок
             import re
 
             # Проверка на заполнение всех полей
             if not username or not password1 or not password2:
                 context['error'] = Error_AllFieldsRequired
-            # Проверка одинаковых паролей
+            # Проверка, совпадают ли введенные пароли
             elif password1 != password2:
                 context['error'] = Error_PasswordsNotMatch
             # Проверка на совпадение логина
@@ -95,19 +101,19 @@ def authorization(request):
             elif len(password1 or password2) <= Min_Password_Length:
                 context['error'] = Error_Password_Length
             else:
-                # Создаем нового пользователя
+                # Создание нового пользователя с хешированным паролем
                 user = User(username=username, password=make_password(password1))
                 user.save()
-                # Автоматически входим в аккаунт
+                # Автоматический вход
                 login(request, user)
                 return redirect('index')
-            # Активируем форму регистрации если была ошибка
+            # Если произошла ошибка, активируем форму регистрации
             context['form_act'] = 'register'
     return render(request, 'authorization.html', context)
 
 
 def get_random_date():
-    # Генерируем случайное смещение от текущей даты
+    """Генерируем случайное смещение от текущей даты"""
     import random
     from datetime import timedelta
     from django.utils import timezone
@@ -119,27 +125,24 @@ def get_random_date():
 
 @login_required
 def upload_file(request):
-    # Проверка на авторизацию
+    # Проверка авторизации
     if not request.user.is_authenticated:
         return redirect('authorization')
 
     # Получаем файл
     if request.method == 'POST':
-        from django.utils import timezone
-
         # Получаем файлы и сохраняем
         for uploaded_file in request.FILES.getlist('uploaded_files'):
-            # Устанавливаем случайную дату
+            # Генерируем случайную дату
             file_date = get_random_date()
-            # Сохраняем каждый файл с датой файла
             foto = ImageModel(user=request.user, image=uploaded_file, date=file_date)
             foto.save()
-
     return redirect('index')
 
 
 @login_required
 def delete_image(request, image_id):
+    # Если объект не найден, возвращается ошибка 404
     image = get_object_or_404(ImageModel, id=image_id, user=request.user)
     image.delete()
     return redirect('index')
